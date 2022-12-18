@@ -16,18 +16,30 @@ class TYPE(Enum):
     ROCK = 0
     PAPER = 1
     SCISSOR = 2
-    
+
+class COLOR(Enum):
+    BLACK = (0,0,0)
+    WHITE = (255,255,255)
+    GREEN = (0, 255, 0)
+    BLUE = (0, 0, 128)
+
 DISPLAY_WIDTH = 500
 DISPLAY_HEIGHT = 600
 IMAGE_WIDTH = 30
 IMAGE_HEIGHT = 30
-CLOCK_TICK = 60
-NUM_OF_ELEMENTS = 30
+LOGO_WIDTH = 250
+LOGO_HEIGHT = 100
+CLOCK_TICK = 60 #optional
+NUM_OF_ELEMENTS = 20 #optional
+
+pygame.init()
+gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH,DISPLAY_HEIGHT))
+clock = pygame.time.Clock()
 
 
 def getRandomLocation():
-    x = random.randint(0,DISPLAY_HEIGHT)
-    y = random.randint(0,DISPLAY_WIDTH)
+    x = random.randint(IMAGE_WIDTH,DISPLAY_WIDTH - IMAGE_WIDTH)
+    y = random.randint(IMAGE_HEIGHT,DISPLAY_HEIGHT - IMAGE_HEIGHT)
     return x, y
 
 def getRandomDirection():
@@ -76,32 +88,6 @@ def updateCoordinates(array):
             obj['x'] = obj['x'] + 1
             obj['y'] = obj['y'] + 1
 
-def changeRotation(obj):
-    if obj['direction'] == DIRECTION.UP_LEFT:
-        return DIRECTION.DOWN_RIGHT
-
-    elif obj['direction'] == DIRECTION.UP:
-        return DIRECTION.DOWN
-
-    elif obj['direction'] == DIRECTION.UP_RIGHT:
-        return DIRECTION.DOWN_LEFT
-    
-    elif obj['direction'] == DIRECTION.LEFT:
-        return DIRECTION.RIGHT
-    
-    elif obj['direction'] == DIRECTION.RIGHT:
-        return DIRECTION.LEFT
-    
-    elif obj['direction'] == DIRECTION.DOWN_LEFT:
-        return DIRECTION.UP_RIGHT
-
-    elif obj['direction'] == DIRECTION.DOWN:
-        return DIRECTION.UP
-
-    elif obj['direction'] == DIRECTION.DOWN_RIGHT:
-        return DIRECTION.UP_LEFT
-    
-
 def boundryControl(array):
     for obj in array:
 
@@ -144,9 +130,7 @@ def boundryControl(array):
             elif obj['direction'] == DIRECTION.DOWN_RIGHT:
                 obj['direction'] = DIRECTION.UP_RIGHT
 
-
-def isPointInsideRectangle(x1, y1, x2,
-              y2, x, y) :
+def isPointInsideRectangle(x1, y1, x2, y2, x, y) :
     if (x > x1 and x < x2 and
         y > y1 and y < y2) :
         return True
@@ -181,7 +165,6 @@ def calculateBattle(type1, type2):
     elif type1 == TYPE.SCISSOR and type2 == TYPE.SCISSOR:
         return TYPE.SCISSOR
 
-
 def detectCollision(elementArray):
     for obj1 in elementArray:
         leftBoundry = obj1['x'] - IMAGE_WIDTH
@@ -189,28 +172,21 @@ def detectCollision(elementArray):
         topBoundry = obj1['y'] - IMAGE_HEIGHT
         bottomBoundry = obj1['y'] + IMAGE_HEIGHT
         for obj2 in elementArray:
-            if isPointInsideRectangle(leftBoundry,topBoundry,rightBoundry,bottomBoundry,obj2['x'],obj2['y']):
+            if obj1 != obj2 and isPointInsideRectangle(leftBoundry,topBoundry,rightBoundry,bottomBoundry,obj2['x'],obj2['y']):
                 obj1['type'] = calculateBattle(obj1['type'], obj2['type'])
                 obj2['type'] = calculateBattle(obj1['type'], obj2['type'])
-                obj1['direction'] = changeRotation(obj1)
-                obj2['direction'] = changeRotation(obj2)
-
-def isGameOver():
-    pass
-
-def changeRotationWhenCollisionOccur():
-    pass
+                
+def isGameOver(array):
+    initialType = array[0]['type']
+    for obj in array:
+        if obj['type'] != initialType:
+            return False
+    return True    
 
 def main():
-    pygame.init()
-
-    gameDisplay = pygame.display.set_mode((DISPLAY_WIDTH,DISPLAY_HEIGHT))
+    
     pygame.display.set_caption('Rock Paper Scissors Simulator')
 
-    black = (0,0,0)
-    white = (255,255,255)
-
-    clock = pygame.time.Clock()
     crashed = False
 
     rockImg = pygame.transform.scale(pygame.image.load('img/rock.png'), (IMAGE_WIDTH, IMAGE_HEIGHT))
@@ -227,16 +203,25 @@ def main():
             if event.type == pygame.QUIT:
                 crashed = True
 
-        gameDisplay.fill(white)
-
-        detectCollision(elementArray)
-
-        updateCoordinates(elementArray)
+        gameDisplay.fill(COLOR.WHITE.value)
 
         for obj in elementArray:
             gameDisplay.blit(imgArray[obj['type'].value], (obj['x'],obj['y']))
 
+        if isGameOver(elementArray):
+            winner = elementArray[0]['type'].name + " WON!"
+            font = pygame.font.Font('freesansbold.ttf', 32)
+            text = font.render(winner, True, COLOR.GREEN.value, COLOR.BLACK.value)
+            textRect = text.get_rect()
+            textRect.center = (DISPLAY_WIDTH // 2, DISPLAY_HEIGHT // 2)
+            gameDisplay.blit(text, textRect)
+
+        else:
+            detectCollision(elementArray)
+            updateCoordinates(elementArray)
             
+            
+
         pygame.display.update()
         clock.tick(CLOCK_TICK)
 
